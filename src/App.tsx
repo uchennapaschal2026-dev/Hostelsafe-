@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -36,7 +31,46 @@ const PageLoader = () => (
   </div>
 );
 
-export default function App() {
+interface AppErrorBoundaryState {
+  error: Error | null;
+}
+
+class AppErrorBoundary extends React.Component<React.PropsWithChildren, AppErrorBoundaryState> {
+  state: AppErrorBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('HostelSafe failed to render:', error, errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <main className="min-h-screen flex items-center justify-center bg-slate-50 p-6 text-slate-900">
+          <section className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
+            <h1 className="text-2xl font-bold">HostelSafe couldn’t load</h1>
+            <p className="mt-3 text-slate-600">A browser error stopped the page from rendering. Reload to try again. If it keeps happening, open your browser console and share the error below.</p>
+            <pre className="mt-4 max-h-40 overflow-auto rounded-lg bg-slate-100 p-3 text-xs text-red-700">{this.state.error.message}</pre>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-5 rounded-lg bg-teal-700 px-5 py-3 font-semibold text-white hover:bg-teal-800"
+            >
+              Reload HostelSafe
+            </button>
+          </section>
+        </main>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function AppContent() {
   return (
     <AuthProvider>
       <Router>
@@ -51,24 +85,16 @@ export default function App() {
                 <Route path="/report-hazard" element={<ReportHazardPage />} />
                 <Route path="/building-safety" element={<BuildingSafetyPage />} />
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
-
-                {/* Company & Legal */}
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/privacy" element={<PrivacyPolicyPage />} />
                 <Route path="/terms" element={<TermsPage />} />
-
-                {/* Role-based Dashboards */}
                 <Route path="/dashboard/student" element={<StudentDashboard />} />
                 <Route path="/dashboard/manager" element={<ManagerDashboard />} />
                 <Route path="/dashboard/inspector" element={<InspectorDashboard />} />
                 <Route path="/dashboard/admin" element={<AdminDashboard />} />
-
-                {/* Authentication */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-
-                {/* Catch-all redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
@@ -77,5 +103,13 @@ export default function App() {
         </div>
       </Router>
     </AuthProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AppErrorBoundary>
+      <AppContent />
+    </AppErrorBoundary>
   );
 }
